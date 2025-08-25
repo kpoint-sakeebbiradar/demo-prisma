@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vendors {
+  id              String   @id @default(uuid()) // UUID
+  name            String   @db.VarChar(100)
+  mobile          String   @db.VarChar(256)
+  email           String?  @db.VarChar(100)
+  password        String?  @db.VarChar(256)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  vendor_name     String?  @db.VarChar(100)
+  address         String?  @db.VarChar(255)
+  google_map_link String?  @db.VarChar(255)
+  domain          String?  @db.VarChar(255)
+}
