@@ -1,0 +1,13 @@
+properties:
+  - property_key: productCategory
+    property_values:
+      - Microwave
+      - Refrigerator
+      - Television
+      - Washing Machine
+      - Air Conditioner
+  - property_key: videoLanguage
+    property_values:
+      - English
+      - Hindi
+      - Malayalam
