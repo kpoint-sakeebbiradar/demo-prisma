@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "all": "npx prisma generate && npx prisma format && npx prisma validate && npx prisma migrate dev --name add_campaign_models && npm run dev",
+    "all-prisma": "npx prisma generate && npx prisma format && npx prisma validate && npx prisma migrate dev --name add_campaign_models && npm run dev",
     "dev": "next dev --turbopack",
     "studio": "npx prisma studio",
     "build": "next build --turbopack",

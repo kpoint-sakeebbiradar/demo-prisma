@@ -9,39 +9,39 @@ datasource db {
 }
 
 model Vendors {
-  id              String  @id @default(uuid()) // UUID
-  name            String  @db.VarChar(100)
-  vendor_name     String  @db.VarChar(255)
-  mobile          String  @db.VarChar(256) // 256 becoz it's hashed. SHA256
-  email           String? @db.VarChar(100)
-  password        String? @db.VarChar(256) // 256 becoz it's hashed. SHA256
-  address         String? @db.VarChar(255)
-  google_map_link String? @db.VarChar(255)
-  domain          String? @db.VarChar(255)
+  id            String  @id @default(uuid()) // UUID
+  name          String  @db.VarChar(100)
+  vendorName    String  @db.VarChar(255)
+  mobile        String  @db.VarChar(256) // 256 because it's hashed. SHA256
+  email         String? @db.VarChar(100)
+  password      String? @db.VarChar(256) // 256 because it's hashed. SHA256
+  address       String? @db.VarChar(255)
+  googleMapLink String? @db.VarChar(255)
+  domain        String? @db.VarChar(255)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vendor_campaign Vendor_Campaigns[]
-  order           Orders[]
-  Payment         Payments[]
+  vendorCampaign VendorCampaigns[]
+  order          Orders[]
+  payment        Payments[]
 }
 
-model Vendor_Campaigns {
-  id                        String               @id @default(uuid()) // UUID
-  vendorId                  String
-  template_campaign_id      String               @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
-  template_campaign_details Json // (full json save)
-  name                      String?              @db.VarChar(150)
-  customer_count            Int                  @default(0)
-  status                    VendorCampaignStatus @default(Draft)
-  created_at                DateTime             @default(now())
-  updated_at                DateTime             @updatedAt
+model VendorCampaigns {
+  id                      String               @id @default(uuid()) // UUID
+  vendorId                String
+  templateCampaignId      String               @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
+  templateCampaignDetails Json // (full json save)
+  name                    String?              @db.VarChar(150)
+  customerCount           Int                  @default(0)
+  status                  VendorCampaignStatus @default(Draft)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
 
-  vendor                   Vendors                      @relation(fields: [vendorId], references: [id])
-  vendor_campaign_property Vendor_Campaign_Properties[]
-  order                    Orders[]
-  payment                  Payments[]
+  vendor                 Vendors                    @relation(fields: [vendorId], references: [id])
+  vendorCampaignProperty VendorCampaignProperties[]
+  order                  Orders[]
+  payment                Payments[]
 }
 
 enum VendorCampaignStatus {
@@ -52,43 +52,41 @@ enum VendorCampaignStatus {
   Failed
 }
 
-model Vendor_Campaign_Properties {
-  id                 String  @id @default(uuid()) // UUID
-  vendor_campaign_id String
-  property_key       String? @db.VarChar(150)
-  property_value     String? @db.VarChar(150)
+model VendorCampaignProperties {
+  id               String  @id @default(uuid()) // UUID
+  vendorCampaignId String
+  propertyKey      String? @db.VarChar(150)
+  propertyValue    String? @db.VarChar(150)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations (assuming vendors and campaign_templates are other models)
-  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
+  vendorCampaign VendorCampaigns @relation(fields: [vendorCampaignId], references: [id])
 }
 
 model Orders {
-  id                 String @id @default(uuid()) // UUID
-  vendorId           String // FK to Vendor.id (UUID)
-  vendor_campaign_id String // FK to Vendor_Campaign.id (UUID)
+  id               String @id @default(uuid()) // UUID
+  vendorId         String // FK to Vendor.id (UUID)
+  vendorCampaignId String // FK to VendorCampaign.id (UUID)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   orderCount      Int @default(0)
   successMsgCount Int @default(0)
   failedMsgCount  Int @default(0)
   viewCount       Int @default(0)
 
-  // Relations
-  vendor          Vendors          @relation(fields: [vendorId], references: [id])
-  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
-  payment         Payments[]
+  vendor         Vendors         @relation(fields: [vendorId], references: [id])
+  vendorCampaign VendorCampaigns @relation(fields: [vendorCampaignId], references: [id])
+  payment        Payments[]
 }
 
 model Payments {
-  id                 String @id @default(uuid()) // UUID
-  orderId            String // FK to Orders.id (UUID)
-  vendorId           String // FK to Vendor.id (UUID)
-  vendor_campaign_id String // FK to Vendor_Campaign.id (UUID)
+  id               String @id @default(uuid()) // UUID
+  orderId          String // FK to Orders.id (UUID)
+  vendorId         String // FK to Vendor.id (UUID)
+  vendorCampaignId String // FK to VendorCampaign.id (UUID)
 
   transactionId String        @unique @db.VarChar(500)
   gateway       String        @default("PayU") @db.VarChar(20)
@@ -96,13 +94,12 @@ model Payments {
   currency      String        @default("INR") @db.VarChar(10)
   status        PaymentStatus
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  order           Orders           @relation(fields: [orderId], references: [id])
-  vendor          Vendors          @relation(fields: [vendorId], references: [id])
-  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
+  order          Orders          @relation(fields: [orderId], references: [id])
+  vendor         Vendors         @relation(fields: [vendorId], references: [id])
+  vendorCampaign VendorCampaigns @relation(fields: [vendorCampaignId], references: [id])
 }
 
 enum PaymentStatus {

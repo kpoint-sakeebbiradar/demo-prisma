@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma";
+import {Prisma} from "@/generated/prisma";
 import bcrypt from "bcrypt";
 import {z} from "zod";
 
@@ -17,13 +17,13 @@ export async function GET(
             select: {
                 id: true,
                 name: true,
+                vendorName: true,
                 email: true,
-                vendor_name: true,
                 address: true,
-                google_map_link: true,
+                googleMapLink: true,
                 domain: true,
-                created_at: true,
-                updated_at: true,
+                createdAt: true,
+                updatedAt: true,
             },
         });
 
@@ -44,15 +44,17 @@ export async function GET(
     }
 }
 
+// ---------------------------
 // ✅ PATCH /api/vendors/[id]
+// ---------------------------
 const vendorPatchSchema = z.object({
     name: z.string().min(2).max(100).optional(),
+    vendorName: z.string().min(2).max(100).optional(),
     mobile: z.string().min(10).max(15).optional(),
     email: z.string().email().optional(),
     password: z.string().min(6).max(50).optional(),
-    vendor_name: z.string().optional(),
     address: z.string().optional(),
-    google_map_link: z.string().url().optional(),
+    googleMapLink: z.string().url().optional(),
     domain: z.string().optional(),
 });
 
@@ -71,8 +73,8 @@ export async function PATCH(
 
         if (Object.keys(dataToUpdate).length === 0) {
             return NextResponse.json(
-                { success: false, message: "No fields to update" },
-                { status: 400 }
+                {success: false, message: "No fields to update"},
+                {status: 400}
             );
         }
 
@@ -90,13 +92,13 @@ export async function PATCH(
             select: {
                 id: true,
                 name: true,
+                vendorName: true,
                 email: true,
-                vendor_name: true,
                 address: true,
-                google_map_link: true,
+                googleMapLink: true,
                 domain: true,
-                created_at: true,
-                updated_at: true,
+                createdAt: true,
+                updatedAt: true,
             }
         });
 
@@ -110,8 +112,8 @@ export async function PATCH(
             );
         }
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === "P2025") { // record not found
-                return NextResponse.json({ success: false, message: "Vendor not found" }, { status: 404 });
+            if (error.code === "P2025") {
+                return NextResponse.json({success: false, message: "Vendor not found"}, {status: 404});
             }
         }
         return NextResponse.json(

@@ -9,12 +9,11 @@ const vendorSchema = z.object({
     mobile: z.string().min(10).max(15), // plain input, will be hashed
     email: z.string().email().optional(),
     password: z.string().min(6).max(50), // plain input, will be hashed
-    vendor_name: z.string().min(2).max(100),
+    vendorName: z.string().min(2).max(100),
     address: z.string().optional(),
-    google_map_link: z.string().url().optional(),
+    googleMapLink: z.string().url().optional(),
     domain: z.string().optional(),
 });
-
 
 // ✅ GET: Fetch all vendors
 export async function GET() {
@@ -24,12 +23,12 @@ export async function GET() {
                 id: true,
                 name: true,
                 email: true,
-                vendor_name: true,
+                vendorName: true,
                 address: true,
-                google_map_link: true,
+                googleMapLink: true,
                 domain: true,
-                created_at: true,
-                updated_at: true,
+                createdAt: true,
+                updatedAt: true,
                 // mobile and password are hashed — you might want to omit them
             }
         });
@@ -43,7 +42,6 @@ export async function GET() {
         );
     }
 }
-
 
 // ✅ POST: Register a vendor
 export async function POST(req: Request) {
@@ -64,9 +62,9 @@ export async function POST(req: Request) {
                 mobile,
                 email: parsed.email,
                 password,
-                vendor_name: parsed.vendor_name,
+                vendorName: parsed.vendorName,
                 address: parsed.address,
-                google_map_link: parsed.google_map_link,
+                googleMapLink: parsed.googleMapLink,
                 domain: parsed.domain,
             },
         });
