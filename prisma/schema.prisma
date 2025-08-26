@@ -53,14 +53,10 @@ enum VendorCampaignStatus {
 }
 
 model Vendor_Campaign_Properties {
-  id                 String @id @default(uuid()) // UUID
+  id                 String  @id @default(uuid()) // UUID
   vendor_campaign_id String
-
-  template_campaign_id      String @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
-  template_campaign_details String // (full json save)
-
-  property_key   String? @db.VarChar(150)
-  property_value String? @db.VarChar(150)
+  property_key       String? @db.VarChar(150)
+  property_value     String? @db.VarChar(150)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
