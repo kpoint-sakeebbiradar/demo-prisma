@@ -1,8 +1,8 @@
 //src/app/api/backend/vendors/route.ts
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import {NextResponse} from "next/server";
+import {prisma} from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import { z } from "zod";
+import {z} from "zod";
 
 // ✅ Input validation schema
 const vendorSchema = z.object({
@@ -34,12 +34,12 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json({ success: true, vendors }, { status: 200 });
+        return NextResponse.json({success: true, vendors}, {status: 200});
     } catch (error) {
         console.error("Error fetching vendors:", error);
         return NextResponse.json(
-            { success: false, message: "Internal Server Error" },
-            { status: 500 }
+            {success: false, message: "Internal Server Error"},
+            {status: 500}
         );
     }
 }
@@ -71,21 +71,21 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(
-            { success: true, vendorId: vendor.id },
-            { status: 201 }
+            {success: true, vendorId: vendor.id},
+            {status: 201}
         );
     } catch (error: unknown) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
-                { success: false, errors: error.issues },
-                { status: 400 }
+                {success: false, errors: error.issues},
+                {status: 400}
             );
         }
 
         console.error("Vendor registration error:", error);
         return NextResponse.json(
-            { success: false, message: "Internal Server Error" },
-            { status: 500 }
+            {success: false, message: "Internal Server Error"},
+            {status: 500}
         );
     }
 }
