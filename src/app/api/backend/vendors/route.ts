@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from '@/generated/prisma'
-
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 // ✅ Input validation schema
 const vendorSchema = z.object({
@@ -31,7 +28,7 @@ export async function GET() {
                 address: true,
                 google_map_link: true,
                 domain: true,
-                created_at: true, // include timestamps if needed
+                created_at: true,
                 updated_at: true,
                 // mobile and password are hashed — you might want to omit them
             }
@@ -81,7 +78,7 @@ export async function POST(req: Request) {
     } catch (error: unknown) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
-                { success: false, errors: error.message },
+                { success: false, errors: error.issues },
                 { status: 400 }
             );
         }
