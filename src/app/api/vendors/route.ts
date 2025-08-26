@@ -12,7 +12,7 @@ const vendorSchema = z.object({
     mobile: z.string().min(10).max(15), // plain input, will be hashed
     email: z.string().email().optional(),
     password: z.string().min(6).max(50), // plain input, will be hashed
-    vendor_name: z.string().optional(),
+    vendor_name: z.string().min(2).max(100),
     address: z.string().optional(),
     google_map_link: z.string().url().optional(),
     domain: z.string().optional(),
