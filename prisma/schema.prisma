@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma" // change from src to app
 }
 
 datasource db {
@@ -29,7 +29,7 @@ model Vendors {
 
 model Vendor_Campaigns {
   id                        String               @id @default(uuid()) // UUID
-  vendor_id                 String
+  vendorId                  String
   template_campaign_id      String               @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
   template_campaign_details Json // (full json save)
   name                      String?              @db.VarChar(150)
@@ -38,7 +38,7 @@ model Vendor_Campaigns {
   created_at                DateTime             @default(now())
   updated_at                DateTime             @updatedAt
 
-  vendor                   Vendors                      @relation(fields: [vendor_id], references: [id])
+  vendor                   Vendors                      @relation(fields: [vendorId], references: [id])
   vendor_campaign_property Vendor_Campaign_Properties[]
   order                    Orders[]
   payment                  Payments[]
@@ -70,7 +70,7 @@ model Orders {
   vendorId           String // FK to Vendor.id (UUID)
   vendor_campaign_id String // FK to Vendor_Campaign.id (UUID)
 
-  createdAt  DateTime @default(now())
+  created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   orderCount      Int @default(0)
@@ -96,7 +96,7 @@ model Payments {
   currency      String        @default("INR") @db.VarChar(10)
   status        PaymentStatus
 
-  createdAt  DateTime @default(now())
+  created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   // Relations
