@@ -1,3 +1,4 @@
+//src/app/api/backend/vendors/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
