@@ -9,15 +9,107 @@ datasource db {
 }
 
 model Vendors {
-  id              String   @id @default(uuid()) // UUID
-  name            String   @db.VarChar(100)
-  mobile          String   @db.VarChar(256)
-  email           String?  @db.VarChar(100)
-  password        String?  @db.VarChar(256)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  vendor_name     String?  @db.VarChar(100)
-  address         String?  @db.VarChar(255)
-  google_map_link String?  @db.VarChar(255)
-  domain          String?  @db.VarChar(255)
+  id              String  @id @default(uuid()) // UUID
+  name            String  @db.VarChar(100)
+  mobile          String  @db.VarChar(256) // 256 becoz it's hashed. SHA256
+  email           String? @db.VarChar(100)
+  password        String? @db.VarChar(256) // 256 becoz it's hashed. SHA256
+  address         String? @db.VarChar(255)
+  google_map_link String? @db.VarChar(255)
+  domain          String? @db.VarChar(255)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  vendor_campaign Vendor_Campaigns[]
+  order           Orders[]
+  Payment         Payments[]
+}
+
+model Vendor_Campaigns {
+  id                        String               @id @default(uuid()) // UUID
+  vendor_id                 String
+  template_campaign_id      String               @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
+  template_campaign_details String // (full json save)
+  name                      String?              @db.VarChar(150)
+  customer_count            Int                  @default(0)
+  status                    VendorCampaignStatus @default(Draft)
+  created_at                DateTime             @default(now())
+  updated_at                DateTime             @updatedAt
+
+  vendor                   Vendors                      @relation(fields: [vendor_id], references: [id])
+  vendor_campaign_property Vendor_Campaign_Properties[]
+  order                    Orders[]
+  payment                  Payments[]
+}
+
+enum VendorCampaignStatus {
+  Draft
+  Pending_Payment
+  Active
+  Completed
+  Failed
+}
+
+model Vendor_Campaign_Properties {
+  id                 String @id @default(uuid()) // UUID
+  vendor_campaign_id String
+
+  template_campaign_id      String @db.VarChar(150) // ID refers to YAML config, not a DB table // Input this Value from FE.
+  template_campaign_details String // (full json save)
+
+  property_key   String? @db.VarChar(150)
+  property_value String? @db.VarChar(150)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations (assuming vendors and campaign_templates are other models)
+  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
+}
+
+model Orders {
+  id                 String @id @default(uuid()) // UUID
+  vendorId           String // FK to Vendor.id (UUID)
+  vendor_campaign_id String // FK to Vendor_Campaign.id (UUID)
+
+  createdAt  DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  orderCount      Int @default(0)
+  successMsgCount Int @default(0)
+  failedMsgCount  Int @default(0)
+  viewCount       Int @default(0)
+
+  // Relations
+  vendor          Vendors          @relation(fields: [vendorId], references: [id])
+  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
+  payment         Payments[]
+}
+
+model Payments {
+  id                 String @id @default(uuid()) // UUID
+  orderId            String // FK to Orders.id (UUID)
+  vendorId           String // FK to Vendor.id (UUID)
+  vendor_campaign_id String // FK to Vendor_Campaign.id (UUID)
+
+  transactionId String        @unique @db.VarChar(500)
+  gateway       String        @default("PayU") @db.VarChar(20)
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("INR") @db.VarChar(10)
+  status        PaymentStatus
+
+  createdAt  DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  order           Orders           @relation(fields: [orderId], references: [id])
+  vendor          Vendors          @relation(fields: [vendorId], references: [id])
+  vendor_campaign Vendor_Campaigns @relation(fields: [vendor_campaign_id], references: [id])
+}
+
+enum PaymentStatus {
+  Pending
+  Success
+  Failed
 }

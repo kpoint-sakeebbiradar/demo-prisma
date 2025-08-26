@@ -1,13 +1,28 @@
 properties:
-  - property_key: productCategory
-    property_values:
-      - Microwave
-      - Refrigerator
-      - Television
-      - Washing Machine
-      - Air Conditioner
-  - property_key: videoLanguage
-    property_values:
-      - English
-      - Hindi
-      - Malayalam
+  - campaignTemplates:
+      - id: 1
+        name: Mrunal Diwali Campaign
+      - id: 2
+        name: Rajkumar Rao Diwali Campaign
+      - id: 3
+        name: Sreeleela Diwali Campaign
+
+  - productCategory:
+    - id: 1
+      name: Microwave
+    - id: 2
+      name: Refrigerator
+    - id: 3
+      name: Television
+    - id: 4
+      name: Washing Machine
+    - id: 5
+      name: Air Conditioner
+
+  - videoLanguage:
+    - id: 1
+      name: English
+    - id: 2
+      name: Hindi
+    - id: 3
+      name: Malayalam
