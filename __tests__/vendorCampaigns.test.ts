@@ -1,10 +1,12 @@
-import { GET as getVendors, POST as createVendor } from "@/app/api/backend/vendors/route";
-import { GET as getVendorById, PATCH as patchVendor } from "@/app/api/backend/vendors/[id]/route";
-import { prisma } from "@/lib/prisma";
+import {GET as getCampaigns, POST as createCampaign} from "@/app/api/backend/vendor-campaigns/route";
+import {GET as getCampaignById} from "@/app/api/backend/vendor-campaigns/[id]/route";
+import {prisma} from "@/lib/prisma";
+import { PATCH as patchCampaign } from "@/app/api/backend/vendor-campaigns/[id]/route";
+import {Prisma} from "@/generated/prisma";
 
 jest.mock("@/lib/prisma", () => ({
     prisma: {
-        vendors: {
+        vendorCampaigns: {
             findMany: jest.fn(),
             create: jest.fn(),
             findUnique: jest.fn(),
@@ -13,152 +15,282 @@ jest.mock("@/lib/prisma", () => ({
     },
 }));
 
-jest.mock("bcrypt", () => ({
-    hash: jest.fn().mockResolvedValue("hashed"),
-}));
-
-describe("Vendors API", () => {
+describe("Vendor Campaigns API", () => {
     afterEach(() => {
         jest.clearAllMocks();
     });
 
-    // --------- GET /vendors ---------
-    it("should return list of vendors", async () => {
-        (prisma.vendors.findMany as jest.Mock).mockResolvedValue([
+    // --------- GET /vendor-campaigns ---------
+    it("should return list of vendor campaigns", async () => {
+        (prisma.vendorCampaigns.findMany as jest.Mock).mockResolvedValue([
             {
-                id: "uuid",
-                name: "Test Vendor",
-                vendorName: "TV Inc.",
-                email: "vendor@example.com",
-                address: "123 Street",
-                googleMapLink: null,
-                domain: "tv.com",
+                id: "campaign-uuid",
+                name: "Diwali Campaign",
+                vendorId: "vendor-uuid",
+                templateCampaignId: "template-id",
+                templateCampaignDetails: {},
+                status: "Draft",
+                vendor: {
+                    id: "vendor-uuid",
+                    name: "Vendor A",
+                    vendorName: "VA Inc.",
+                },
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
         ]);
 
-        const response = await getVendors();
+        const response = await getCampaigns();
         const json = await response.json();
 
         expect(response.status).toBe(200);
         expect(json.success).toBe(true);
-        expect(json.vendors).toHaveLength(1);
-        expect(prisma.vendors.findMany).toHaveBeenCalled();
+        expect(json.campaigns).toHaveLength(1);
+        expect(prisma.vendorCampaigns.findMany).toHaveBeenCalled();
     });
 
-    // --------- POST /vendors ---------
-    it("should create a new vendor with hashed fields", async () => {
-        const mockVendor = {
-            id: "uuid",
-            name: "New Vendor",
-            vendorName: "NV Inc.",
-            email: "new@example.com",
-            address: "New Address",
-            googleMapLink: null,
-            domain: "nv.com",
+    // --------- POST /vendor-campaigns ---------
+    it("should create a new vendor campaign", async () => {
+        const mockCampaign = {
+            id: "new-campaign-uuid",
         };
 
-        (prisma.vendors.create as jest.Mock).mockResolvedValue(mockVendor);
+        (prisma.vendorCampaigns.create as jest.Mock).mockResolvedValue(mockCampaign);
 
-        const req = new Request("http://localhost/api/backend/vendors", {
+        const req = new Request("http://localhost/api/backend/vendor-campaigns", {
             method: "POST",
             body: JSON.stringify({
-                name: "New Vendor",
-                mobile: "1234567890",
-                password: "secret123",
-                vendorName: "NV Inc.",
-                email: "new@example.com",
-                address: "New Address",
-                domain: "nv.com",
+                name: "New Vendor Campaign",
+                vendorId: "d0f1c73c-a572-48a6-b6d9-1fb0a6e801b7",
+                templateCampaignId: "test1",
+                templateCampaignDetails: {
+                    success: true,
+                    data: {
+                        properties: [
+                            {
+                                campaignTemplates: [
+                                    {id: 1, name: "Template A"},
+                                    {id: 2, name: "Template B"},
+                                ],
+                            },
+                        ],
+                    },
+                },
+                status: "Draft",
             }),
         });
 
-        const response = await createVendor(req);
+        const response = await createCampaign(req);
         const json = await response.json();
 
         expect(response.status).toBe(201);
         expect(json.success).toBe(true);
-        expect(prisma.vendors.create).toHaveBeenCalledWith(
+        expect(json.campaignId).toBe("new-campaign-uuid");
+        expect(prisma.vendorCampaigns.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 data: expect.objectContaining({
-                    mobile: "hashed",
-                    password: "hashed",
+                    vendorId: "d0f1c73c-a572-48a6-b6d9-1fb0a6e801b7",
+                    templateCampaignId: "test1",
+                    name: "New Vendor Campaign",
                 }),
             })
         );
     });
 
-    // --------- GET /vendors/[id] ---------
-    it("should fetch vendor by ID", async () => {
-        const vendorId = "uuid";
-        (prisma.vendors.findUnique as jest.Mock).mockResolvedValue({
-            id: vendorId,
-            name: "Vendor A",
-            vendorName: "VA Co",
-            email: "va@example.com",
-            createdAt: new Date(),
-            updatedAt: new Date(),
+    // --------- GET /vendor-campaigns/[id] ---------
+    it("should fetch vendor campaign by ID", async () => {
+        const campaignId = "e09eb861-f0ce-410a-93fc-19340443cd37";
+
+        (prisma.vendorCampaigns.findUnique as jest.Mock).mockResolvedValue({
+            id: campaignId,
+            name: "Test Campaign",
+            vendorId: "vendor-uuid",
+            templateCampaignId: "template-1",
+            templateCampaignDetails: {},
+            status: "Draft",
+            vendor: {
+                id: "vendor-uuid",
+                name: "Vendor A",
+                vendorName: "VA Inc.",
+            },
         });
 
-        const response = await getVendorById({} as Request, { params: { id: vendorId } });
+        const response = await getCampaignById({} as Request, {params: {id: campaignId}});
         const json = await response.json();
 
         expect(response.status).toBe(200);
         expect(json.success).toBe(true);
-        expect(prisma.vendors.findUnique).toHaveBeenCalledWith({
-            where: { id: vendorId },
-            select: expect.any(Object),
+        expect(json.vendorCampaign.id).toBe(campaignId);
+        expect(prisma.vendorCampaigns.findUnique).toHaveBeenCalledWith({
+            where: {id: campaignId},
+            include: {
+                vendor: {
+                    select: {
+                        id: true,
+                        name: true,
+                        vendorName: true,
+                    },
+                },
+            },
         });
     });
 
-    // --------- PATCH /vendors/[id] ---------
-    it("should update a vendor", async () => {
-        const vendorId = "uuid";
-        (prisma.vendors.update as jest.Mock).mockResolvedValue({
-            id: vendorId,
-            name: "Updated Name",
-            vendorName: "UV Inc.",
-            email: "uv@example.com",
-            createdAt: new Date(),
-            updatedAt: new Date(),
+    // --------- GET /vendor-campaigns/[id]: not found ---------
+    it("should return 404 if vendor campaign not found", async () => {
+        (prisma.vendorCampaigns.findUnique as jest.Mock).mockResolvedValue(null);
+
+        const response = await getCampaignById({} as Request, {params: {id: "non-existent-id"}});
+        const json = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(json.success).toBe(false);
+        expect(json.message).toBe("Vendor Campaign not found");
+    });
+
+    // --------- POST /vendor-campaigns: invalid input ---------
+    it("should return 400 on invalid input", async () => {
+        const req = new Request("http://localhost/api/backend/vendor-campaigns", {
+            method: "POST",
+            body: JSON.stringify({
+                vendorId: "not-a-uuid",
+                templateCampaignId: 123,
+            }),
         });
 
-        const req = new Request(`http://localhost/api/backend/vendors/${vendorId}`, {
+        const response = await createCampaign(req);
+        const json = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(json.success).toBe(false);
+        expect(json.errors).toBeDefined();
+    });
+});
+
+
+// --------- PATCH /vendor-campaigns/[id] ---------
+describe("PATCH /vendor-campaigns/:id", () => {
+    const campaignId = "e09eb861-f0ce-410a-93fc-19340443cd37";
+
+    it("should successfully update vendor campaign", async () => {
+        (prisma.vendorCampaigns.update as jest.Mock).mockResolvedValue({
+            id: campaignId,
+            name: "New Vendor Campaign",
+            status: "Draft",
+            vendor: {
+                id: "d0f1c73c-a572-48a6-b6d9-1fb0a6e801b7",
+                name: "Sakeeb Biradra",
+                vendorName: "Vijaya Sales Baner",
+            },
+        });
+
+        const req = new Request(`http://localhost/api/backend/vendor-campaigns/${campaignId}`, {
             method: "PATCH",
             body: JSON.stringify({
-                name: "Updated Name",
-                password: "newpass123",
+                name: "New Vendor Campaign",
+                status: "Draft",
+                templateCampaignDetails: {
+                    data: {
+                        properties: [
+                            {
+                                campaignTemplates: [
+                                    {id: 1, name: "Mrunal Diwali Campaign"},
+                                    {id: 2, name: "Rajkumar Rao Diwali Campaign"},
+                                    {id: 3, name: "Sreeleela Diwali Campaign"},
+                                ],
+                            },
+                        ],
+                    },
+                    success: true,
+                },
             }),
         });
 
-        const response = await patchVendor(req, { params: { id: vendorId } });
+        const response = await patchCampaign(req, {params: {id: campaignId}});
         const json = await response.json();
 
         expect(response.status).toBe(200);
         expect(json.success).toBe(true);
-        expect(prisma.vendors.update).toHaveBeenCalledWith({
-            where: { id: vendorId },
-            data: expect.objectContaining({
-                name: "Updated Name",
-                password: "hashed",
-            }),
-            select: expect.any(Object),
+        expect(prisma.vendorCampaigns.update).toHaveBeenCalledWith({
+            where: {id: campaignId},
+            data: {
+                name: "New Vendor Campaign",
+                status: "Draft",
+                templateCampaignDetails: expect.any(Object),
+            },
+            include: {
+                vendor: {
+                    select: {
+                        id: true,
+                        name: true,
+                        vendorName: true,
+                    },
+                },
+            },
         });
     });
 
-    // --------- PATCH: No fields ---------
     it("should return 400 if no fields to update", async () => {
-        const req = new Request("http://localhost/api/backend/vendors/id", {
+        const req = new Request(`http://localhost/api/backend/vendor-campaigns/${campaignId}`, {
             method: "PATCH",
             body: JSON.stringify({}),
         });
 
-        const response = await patchVendor(req, { params: { id: "id" } });
+        const response = await patchCampaign(req, {params: {id: campaignId}});
         const json = await response.json();
 
         expect(response.status).toBe(400);
         expect(json.success).toBe(false);
         expect(json.message).toBe("No fields to update");
+    });
+
+    it("should return 400 on invalid input", async () => {
+        const req = new Request(`http://localhost/api/backend/vendor-campaigns/${campaignId}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                status: "InvalidStatus", // Not part of the enum
+            }),
+        });
+
+        const response = await patchCampaign(req, {params: {id: campaignId}});
+        const json = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(json.success).toBe(false);
+        expect(json.errors).toBeDefined();
+    });
+
+    it("should return 404 if vendor campaign not found", async () => {
+        const prismaError = { code: "P2025" }; // Mock with only the needed property
+
+        (prisma.vendorCampaigns.update as jest.Mock).mockRejectedValue(prismaError);
+
+        const req = new Request(`http://localhost/api/backend/vendor-campaigns/${campaignId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ name: "Updated Campaign" }),
+        });
+
+        const response = await patchCampaign(req, { params: { id: campaignId } });
+        const json = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(json.success).toBe(false);
+        expect(json.message).toBe("Vendor Campaign not found");
+    });
+
+
+    it("should return 500 on internal server error", async () => {
+        (prisma.vendorCampaigns.update as jest.Mock).mockRejectedValue(new Error("DB crashed"));
+
+        const req = new Request(`http://localhost/api/backend/vendor-campaigns/${campaignId}`, {
+            method: "PATCH",
+            body: JSON.stringify({name: "Update Fail"}),
+        });
+
+        const response = await patchCampaign(req, {params: {id: campaignId}});
+        const json = await response.json();
+
+        expect(response.status).toBe(500);
+        expect(json.success).toBe(false);
+        expect(json.message).toBe("Internal Server Error");
     });
 });
