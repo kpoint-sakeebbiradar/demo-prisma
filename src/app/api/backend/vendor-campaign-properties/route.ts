@@ -1,86 +1,69 @@
-// src/app/api/backend/vendor-campaigns/[id]/route.ts
+// src/app/api/backend/vendor-campaign-properties/[id]/route.ts
 import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
 import {Prisma} from "@/generated/prisma";
 import {z} from "zod";
 
-// ✅ GET vendor campaign by ID
-export async function GET(req: Request, {params}: { params: { id: string } }) {
+const propertySchema = z.object({
+    vendorCampaignId: z.string().uuid(),
+    properties: z.array(
+        z.object({
+            propertyKey: z.string().max(150),
+            propertyValue: z.string().max(150),
+        })
+    ),
+});
+
+// ✅ GET vendor campaign properties by ID
+export async function GET(req: Request) {
     try {
-        const {id} = params;
+        const {searchParams} = new URL(req.url);
+        const vendorCampaignId = searchParams.get("vendorCampaignId");
 
-        const vendorCampaign = await prisma.vendorCampaigns.findUnique({
-            where: {id: id},
-            include: {
-                vendor: {
-                    select: {
-                        id: true,
-                        name: true,
-                        vendorName: true,
-                    },
-                },
-            },
-        });
-
-        if (!vendorCampaign) {
-            return NextResponse.json({success: false, message: "Vendor Campaign not found"}, {status: 404});
+        if (!vendorCampaignId) {
+            return NextResponse.json({success: false, message: "Missing vendorCampaignId"}, {status: 400});
         }
 
-        return NextResponse.json({success: true, vendorCampaign}, {status: 200});
+        const properties = await prisma.vendorCampaignProperties.findMany({
+            where: {vendorCampaignId},
+        });
+
+        return NextResponse.json({success: true, properties}, {status: 200});
     } catch (error) {
-        console.error("Error fetching vendor campaign:", error);
+        console.error("Error in GET /vendor-campaign-properties:", error);
         return NextResponse.json({success: false, message: "Internal Server Error"}, {status: 500});
     }
 }
 
-// ✅ PATCH /api/vendor-campaigns/[id]
-const vendorCampaignPatchSchema = z.object({
-    name: z.string().max(150).optional(),
-    templateCampaignDetails: z.any().optional(),
-    status: z.enum(["Draft", "Pending_Payment", "Active", "Completed", "Failed"]).optional(), // update this based on your enum
-    // status: z.nativeEnum(VendorCampaignStatus).optional(),
-});
-
-type VendorPatchInput = z.infer<typeof vendorCampaignPatchSchema>;
-
-export async function PATCH(req: Request, {params}: { params: { id: string } }) {
+export async function POST(req: Request) {
     try {
-        const {id} = params;
         const body = await req.json();
-        const parsed = vendorCampaignPatchSchema.parse(body);
+        const parsed = propertySchema.parse(body);
 
-        const dataToUpdate: Partial<VendorPatchInput> = {...parsed};
+        const {vendorCampaignId, properties} = parsed;
 
-        if (Object.keys(dataToUpdate).length === 0) {
-            return NextResponse.json(
-                {success: false, message: "No fields to update"},
-                {status: 400}
-            );
-        }
-
-        const updatedVendorCampaign = await prisma.vendorCampaigns.update({
-            where: {id},
-            data: dataToUpdate,
-            include: {
-                vendor: {
-                    select: {
-                        id: true,
-                        name: true,
-                        vendorName: true,
-                    },
-                },
-            },
+        // Delete old properties first (optional)
+        await prisma.vendorCampaignProperties.deleteMany({
+            where: {vendorCampaignId},
         });
 
-        return NextResponse.json({success: true, updatedVendorCampaign}, {status: 200});
+        // Bulk insert new properties
+        const createdProperties = await prisma.vendorCampaignProperties.createMany({
+            data: properties.map(prop => ({
+                vendorCampaignId,
+                propertyKey: prop.propertyKey,
+                propertyValue: prop.propertyValue,
+            })),
+        });
+
+        return NextResponse.json({success: true, count: createdProperties.count}, {status: 201});
     } catch (error) {
-        console.error("Error updating vendor campaign:", error);
+        console.error("Error in POST /vendor-campaign-properties:", error);
         if (error instanceof z.ZodError) {
             return NextResponse.json({success: false, errors: error.issues}, {status: 400});
         }
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-            return NextResponse.json({success: false, message: "Vendor Campaign not found"}, {status: 404});
-        }
         return NextResponse.json({success: false, message: "Internal Server Error"}, {status: 500});
     }
 }
+
+
