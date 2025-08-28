@@ -1,11 +1,10 @@
-//src/app/api/backend/vendors/[id]/route.ts
+// src/app/api/backend/orders/[id]/route.ts
 import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
 import {Prisma} from "@/generated/prisma";
-import bcrypt from "bcrypt";
 import {z} from "zod";
 
-// ✅ GET /api/vendors/[id]
+// ✅ GET /api/orders/[id]
 export async function GET(
     req: Request,
     {params}: { params: { id: string } }
@@ -13,31 +12,31 @@ export async function GET(
     try {
         const {id} = params;
 
-        const vendor = await prisma.vendors.findUnique({
+        const order = await prisma.orders.findUnique({
             where: {id},
             select: {
                 id: true,
-                name: true,
-                vendorName: true,
-                email: true,
-                address: true,
-                googleMapLink: true,
-                domain: true,
+                vendorId: true,
+                vendorCampaignId: true,
+                orderCount: true,
+                successMsgCount: true,
+                failedMsgCount: true,
+                viewCount: true,
                 createdAt: true,
                 updatedAt: true,
             },
         });
 
-        if (!vendor) {
+        if (!order) {
             return NextResponse.json(
-                {success: false, message: "Vendor not found"},
+                {success: false, message: "Order not found"},
                 {status: 404}
             );
         }
 
-        return NextResponse.json({success: true, vendor}, {status: 200});
+        return NextResponse.json({success: true, order}, {status: 200});
     } catch (error) {
-        console.error("Error fetching vendor by ID:", error);
+        console.error("Error fetching order by ID:", error);
         return NextResponse.json(
             {success: false, message: "Internal Server Error"},
             {status: 500}
@@ -46,20 +45,14 @@ export async function GET(
 }
 
 // ---------------------------
-// ✅ PATCH /api/vendors/[id]
+// ✅ PATCH /api/orders/[id]
 // ---------------------------
-const vendorPatchSchema = z.object({
-    name: z.string().min(2).max(100).optional(),
-    vendorName: z.string().min(2).max(100).optional(),
-    mobile: z.string().min(10).max(15).optional(),
-    email: z.string().email().optional(),
-    password: z.string().min(6).max(50).optional(),
-    address: z.string().optional(),
-    googleMapLink: z.string().url().optional(),
-    domain: z.string().optional(),
+const orderPatchSchema = z.object({
+    orderCount: z.number().int().nonnegative().optional(),
+    successMsgCount: z.number().int().nonnegative().optional(),
+    failedMsgCount: z.number().int().nonnegative().optional(),
+    viewCount: z.number().int().nonnegative().optional(),
 });
-
-type VendorPatchInput = z.infer<typeof vendorPatchSchema>;
 
 export async function PATCH(
     req: Request,
@@ -68,44 +61,34 @@ export async function PATCH(
     try {
         const {id} = params;
         const body = await req.json();
-        const parsed: VendorPatchInput = vendorPatchSchema.parse(body);
+        const parsed = orderPatchSchema.parse(body);
 
-        const dataToUpdate: Partial<VendorPatchInput> = {...parsed};
-
-        if (Object.keys(dataToUpdate).length === 0) {
+        if (Object.keys(parsed).length === 0) {
             return NextResponse.json(
                 {success: false, message: "No fields to update"},
                 {status: 400}
             );
         }
 
-        if (parsed.mobile) {
-            dataToUpdate.mobile = await bcrypt.hash(parsed.mobile, 10);
-        }
-
-        if (parsed.password) {
-            dataToUpdate.password = await bcrypt.hash(parsed.password, 10);
-        }
-
-        const updatedVendor = await prisma.vendors.update({
+        const updatedOrder = await prisma.orders.update({
             where: {id},
-            data: dataToUpdate,
+            data: parsed,
             select: {
                 id: true,
-                name: true,
-                vendorName: true,
-                email: true,
-                address: true,
-                googleMapLink: true,
-                domain: true,
+                vendorId: true,
+                vendorCampaignId: true,
+                orderCount: true,
+                successMsgCount: true,
+                failedMsgCount: true,
+                viewCount: true,
                 createdAt: true,
                 updatedAt: true,
-            }
+            },
         });
 
-        return NextResponse.json({success: true, updatedVendor}, {status: 200});
+        return NextResponse.json({success: true, updatedOrder}, {status: 200});
     } catch (error) {
-        console.error("PATCH vendor error:", error);
+        console.error("PATCH order error:", error);
         if (error instanceof z.ZodError) {
             return NextResponse.json(
                 {success: false, errors: error.issues},
@@ -114,7 +97,10 @@ export async function PATCH(
         }
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === "P2025") {
-                return NextResponse.json({success: false, message: "Vendor not found"}, {status: 404});
+                return NextResponse.json(
+                    {success: false, message: "Order not found"},
+                    {status: 404}
+                );
             }
         }
         return NextResponse.json(
