@@ -1,42 +1,36 @@
-//src/app/api/backend/vendors/route.ts
+// src/app/api/backend/payments/route.ts
 import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import {Prisma} from "@/generated/prisma";
 import {z} from "zod";
 
-// ✅ Input validation schema
-const vendorSchema = z.object({
-    name: z.string().min(2).max(100),
-    mobile: z.string().min(10).max(15), // plain input, will be hashed
-    email: z.string().email().optional(),
-    password: z.string().min(6).max(50), // plain input, will be hashed
-    vendorName: z.string().min(2).max(100),
-    address: z.string().optional(),
-    googleMapLink: z.string().url().optional(),
-    domain: z.string().optional(),
+// ✅ Input Validation schema for payments
+const paymentSchema = z.object({
+    orderId: z.string().uuid(),
+    vendorId: z.string().uuid(),
+    vendorCampaignId: z.string().uuid(),
+
+    transactionId: z.string().max(500),
+    gateway: z.string().max(20).default("PayU"),
+    amount: z.number().positive(),
+    currency: z.string().max(10).default("INR"),
+    status: z.enum(["Pending", "Success", "Failed"]),
 });
 
-// ✅ GET: Fetch all vendors
+// ✅ GET: Fetch all payments
 export async function GET() {
     try {
-        const vendors = await prisma.vendors.findMany({
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                vendorName: true,
-                address: true,
-                googleMapLink: true,
-                domain: true,
-                createdAt: true,
-                updatedAt: true,
-                // mobile and password are hashed — you might want to omit them
-            }
+        const payments = await prisma.payments.findMany({
+            include: {
+                order: true,
+                vendor: true,
+                vendorCampaign: true,
+            },
         });
 
-        return NextResponse.json({success: true, vendors}, {status: 200});
+        return NextResponse.json({success: true, payments}, {status: 200});
     } catch (error) {
-        console.error("Error fetching vendors:", error);
+        console.error("Error fetching payments:", error);
         return NextResponse.json(
             {success: false, message: "Internal Server Error"},
             {status: 500}
@@ -44,36 +38,20 @@ export async function GET() {
     }
 }
 
-// ✅ POST: Register a vendor
+// ✅ POST: Create new payment
 export async function POST(req: Request) {
     try {
         const body = await req.json();
 
         // Validate input
-        const parsed = vendorSchema.parse(body);
-
-        // Hash sensitive data
-        const mobile = await bcrypt.hash(parsed.mobile, 10);
-        const password = await bcrypt.hash(parsed.password, 10);
+        const parsed = paymentSchema.parse(body);
 
         // Save to DB
-        const vendor = await prisma.vendors.create({
-            data: {
-                name: parsed.name,
-                mobile,
-                email: parsed.email,
-                password,
-                vendorName: parsed.vendorName,
-                address: parsed.address,
-                googleMapLink: parsed.googleMapLink,
-                domain: parsed.domain,
-            },
+        const payment = await prisma.payments.create({
+            data: parsed,
         });
 
-        return NextResponse.json(
-            {success: true, vendorId: vendor.id},
-            {status: 201}
-        );
+        return NextResponse.json({success: true, paymentId: payment.id}, {status: 201});
     } catch (error: unknown) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
@@ -82,7 +60,17 @@ export async function POST(req: Request) {
             );
         }
 
-        console.error("Vendor registration error:", error);
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+        ) {
+            return NextResponse.json(
+                {success: false, message: "Transaction ID must be unique"},
+                {status: 400}
+            );
+        }
+
+        console.error("Payment creation error:", error);
         return NextResponse.json(
             {success: false, message: "Internal Server Error"},
             {status: 500}
